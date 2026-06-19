@@ -7,7 +7,7 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dontenv.config();
 
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGO_DB_URI;
 
 const app = express();
 const PORT = process.env.PORT;
@@ -31,7 +31,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    const db = client.db("tech-bazaar");
+    const db = client.db();
+
+
+    const database = client.db("pulsecare_db");
 
  
 
