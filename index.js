@@ -31,32 +31,59 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    const db = client.db();
+    
 
 
     const database = client.db("pulsecare_db");   
+    console.log("DB Name:", database.databaseName);
+
+    
 const districtsCollection =  database.collection("districts");
 const upazilasCollection = database.collection("upazilas");
 const donationRequestCollection = database.collection("donationRequests");
 const collections = await database.listCollections().toArray();
 
+
+console.log(
+  "Collection Name:",
+  donationRequestCollection.collectionName
+);
+const count = await donationRequestCollection.countDocuments();
+console.log("Donation Count:", count);
+
 console.log("Collections:");
 console.log(collections);
 
+console.log(
+  collections.map((c) => c.name)
+);
 
 
 
+app.get("/test-insert", async (req, res) => {
+  const result = await donationRequestCollection.insertOne({
+    recipientName: "Backend Test",
+    bloodGroup: "A+",
+    status: "pending",
+  });
+
+  res.send(result);
+});
 app.get("/donation-requests", async (req, res) => {
 
   const count = await donationRequestCollection.countDocuments();
-  console.log("Total Documents:", count);
+  console.log("Donation Count:", count);
 
-  const result = await donationRequestCollection.find({}).toArray();
+  const result = await donationRequestCollection
+    .find({})
+    .toArray();
 
   console.log(result);
 
   res.send(result);
 });
+
+
 
   app.get("/districts", async (req, res) => {
   const result = await districtsCollection
