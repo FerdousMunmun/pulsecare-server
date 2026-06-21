@@ -8,7 +8,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dontenv.config();
 console.log("CLIENT_URL =", process.env.CLIENT_URL);
 const uri = process.env.MONGO_DB_URI;
-
+console.log(process.env.MONGO_DB_URI);
 const app = express();
 const PORT = 5000;
 
@@ -37,8 +37,26 @@ async function run() {
     const database = client.db("pulsecare_db");   
 const districtsCollection =  database.collection("districts");
 const upazilasCollection = database.collection("upazilas");
-const donationRequestCollection =
-database.collection("donationRequests");
+const donationRequestCollection = database.collection("donationRequests");
+const collections = await database.listCollections().toArray();
+
+console.log("Collections:");
+console.log(collections);
+
+
+
+
+app.get("/donation-requests", async (req, res) => {
+
+  const count = await donationRequestCollection.countDocuments();
+  console.log("Total Documents:", count);
+
+  const result = await donationRequestCollection.find({}).toArray();
+
+  console.log(result);
+
+  res.send(result);
+});
 
   app.get("/districts", async (req, res) => {
   const result = await districtsCollection
@@ -60,15 +78,7 @@ app.get("/districts/:id/upazilas", async (req, res) => {
   res.send(result);
 });
 
-app.get("/donation-requests", async (req, res) => {
 
-  const result = await donationRequestCollection
-    .find({ status: "pending" })
-    .toArray();
-
-  res.send(result);
-
-});
  
 
     await client.db("admin").command({ ping: 1 });
