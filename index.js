@@ -41,44 +41,15 @@ async function run() {
 const districtsCollection =  database.collection("districts");
 const upazilasCollection = database.collection("upazilas");
 const donationRequestCollection = database.collection("donationRequests");
-const collections = await database.listCollections().toArray();
-
-
-console.log(
-  "Collection Name:",
-  donationRequestCollection.collectionName
-);
-const count = await donationRequestCollection.countDocuments();
-console.log("Donation Count:", count);
-
-console.log("Collections:");
-console.log(collections);
-
-console.log(
-  collections.map((c) => c.name)
-);
 
 
 
-app.get("/test-insert", async (req, res) => {
-  const result = await donationRequestCollection.insertOne({
-    recipientName: "Backend Test",
-    bloodGroup: "A+",
-    status: "pending",
-  });
 
-  res.send(result);
-});
-app.get("/donation-requests", async (req, res) => {
 
-  const count = await donationRequestCollection.countDocuments();
-  console.log("Donation Count:", count);
-
+ app.get("/donation-requests", async (req, res) => {
   const result = await donationRequestCollection
     .find({})
     .toArray();
-
-  console.log(result);
 
   res.send(result);
 });
@@ -101,6 +72,15 @@ app.get("/districts/:id/upazilas", async (req, res) => {
       district_id: districtId,
     })
     .toArray();
+
+  res.send(result);
+});
+
+app.post("/donation-requests", async (req,res)=>{
+  const request = req.body;
+
+  const result =
+    await donationRequestCollection.insertOne(request);
 
   res.send(result);
 });
