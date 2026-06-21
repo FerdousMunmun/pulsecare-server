@@ -6,11 +6,11 @@ const dontenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dontenv.config();
-
+console.log("CLIENT_URL =", process.env.CLIENT_URL);
 const uri = process.env.MONGO_DB_URI;
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = 5000;
 
 app.use(
   cors({
@@ -34,8 +34,41 @@ async function run() {
     const db = client.db();
 
 
-    const database = client.db("pulsecare_db");
+    const database = client.db("pulsecare_db");   
+const districtsCollection =  database.collection("districts");
+const upazilasCollection = database.collection("upazilas");
+const donationRequestCollection =
+database.collection("donationRequests");
 
+  app.get("/districts", async (req, res) => {
+  const result = await districtsCollection
+    .find({})
+    .toArray();
+
+  res.send(result);
+});
+
+app.get("/districts/:id/upazilas", async (req, res) => {
+  const districtId = req.params.id;
+
+  const result = await upazilasCollection
+    .find({
+      district_id: districtId,
+    })
+    .toArray();
+
+  res.send(result);
+});
+
+app.get("/donation-requests", async (req, res) => {
+
+  const result = await donationRequestCollection
+    .find({ status: "pending" })
+    .toArray();
+
+  res.send(result);
+
+});
  
 
     await client.db("admin").command({ ping: 1 });
@@ -52,6 +85,9 @@ run().catch(console.dir);
 app.get("/", (req, res) => {
   res.send("Server is running fine!");
 });
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
