@@ -76,11 +76,12 @@ app.get("/districts/:id/upazilas", async (req, res) => {
   res.send(result);
 });
 
-app.post("/donation-requests", async (req,res)=>{
-  const request = req.body;
+app.post("/donation-requests", async (req, res) => {
+  console.log("BODY:", req.body);
 
-  const result =
-    await donationRequestCollection.insertOne(request);
+  const result = await donationRequestCollection.insertOne(req.body);
+
+  console.log("RESULT:", result);
 
   res.send(result);
 });
