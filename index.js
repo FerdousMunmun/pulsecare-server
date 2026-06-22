@@ -108,6 +108,27 @@ app.delete("/donation-requests/:id", async (req, res) => {
 });
 
 
+app.patch(
+  "/donation-requests/:id",
+  async (req, res) => {
+    const id = req.params.id;
+
+    const updatedData = req.body;
+
+    const result =
+      await donationRequestCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: updatedData,
+        }
+      );
+
+    res.send(result);
+  }
+);
+
 
 
  
