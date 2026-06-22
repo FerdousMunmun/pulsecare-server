@@ -108,12 +108,36 @@ app.delete("/donation-requests/:id", async (req, res) => {
 });
 
 
+app.patch("/donation-requests/:id", async (req, res) => {
+  const id = req.params.id;
+
+  console.log("PATCH DATA:", req.body);
+
+  const result = await donationRequestCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: req.body }
+  );
+
+  console.log("PATCH RESULT:", result);
+
+  const updatedDoc = await donationRequestCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  console.log("UPDATED DOC:", updatedDoc);
+
+  res.send(result);
+});
+
+
 app.patch(
-  "/donation-requests/:id",
+  "/donation-requests/:id/donate",
   async (req, res) => {
+
     const id = req.params.id;
 
-    const updatedData = req.body;
+    const donorInfo = req.body;
+
 
     const result =
       await donationRequestCollection.updateOne(
@@ -121,9 +145,18 @@ app.patch(
           _id: new ObjectId(id),
         },
         {
-          $set: updatedData,
+          $set: {
+            status: "inprogress",
+
+            donorName:
+              donorInfo.donorName,
+
+            donorEmail:
+              donorInfo.donorEmail,
+          },
         }
       );
+
 
     res.send(result);
   }
