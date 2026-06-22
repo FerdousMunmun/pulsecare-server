@@ -10,7 +10,7 @@ console.log("CLIENT_URL =", process.env.CLIENT_URL);
 const uri = process.env.MONGO_DB_URI;
 console.log(process.env.MONGO_DB_URI);
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
@@ -88,6 +88,24 @@ app.get("/districts/:id/upazilas", async (req, res) => {
   res.send(result);
 });
 
+app.get(
+  "/my-donation-requests/:email",
+  async (req, res) => {
+
+    const email = req.params.email;
+
+    const result =
+      await donationRequestCollection
+      .find({
+        requesterEmail: email,
+      })
+      .toArray();
+
+
+    res.send(result);
+
+  }
+);
 app.post("/donation-requests", async (req, res) => {
   console.log("BODY:", req.body);
 
