@@ -55,6 +55,18 @@ const donationRequestCollection = database.collection("donationRequests");
 });
 
 
+app.get("/donation-requests/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result =
+    await donationRequestCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+  res.send(result);
+});
+
+
 
   app.get("/districts", async (req, res) => {
   const result = await districtsCollection
@@ -85,6 +97,17 @@ app.post("/donation-requests", async (req, res) => {
 
   res.send(result);
 });
+app.delete("/donation-requests/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await donationRequestCollection.deleteOne({
+    _id: new ObjectId(id),
+  });
+
+  res.send(result);
+});
+
+
 
 
  
