@@ -246,6 +246,26 @@ app.patch(
   }
 );
 
+app.patch(
+  "/users/:id/role",
+  async (req, res) => {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const result =
+      await usersCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: { role },
+        }
+      );
+
+    res.send(result);
+  }
+);
+
 
  
 
