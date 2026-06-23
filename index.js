@@ -124,6 +124,13 @@ app.get(
 
   }
 );
+
+
+
+app.get("/users", async (req, res) => {
+  const users = await usersCollection.find().toArray();
+  res.send(users);
+});
 app.post("/donation-requests", async (req, res) => {
   console.log("BODY:", req.body);
 
@@ -219,7 +226,25 @@ app.patch(
 
   }
 );
+app.patch(
+  "/users/:id/status",
+  async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
 
+    const result =
+      await usersCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: { status },
+        }
+      );
+
+    res.send(result);
+  }
+);
 
 
  
