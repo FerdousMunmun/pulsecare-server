@@ -67,6 +67,23 @@ app.get("/donation-requests/:id", async (req, res) => {
   res.send(result);
 });
 
+app.get("/dashboard-stats", async (req, res) => {
+  const totalDonors = await usersCollection.countDocuments({
+    role: "donor",
+  });
+
+  const totalRequests =
+    await donationRequestCollection.countDocuments();
+
+  const totalFunding = 0;
+
+  res.send({
+    totalDonors,
+    totalRequests,
+    totalFunding,
+  });
+});
+
 
 
   app.get("/districts", async (req, res) => {
