@@ -42,6 +42,7 @@ const districtsCollection =  database.collection("districts");
 const upazilasCollection = database.collection("upazilas");
 const donationRequestCollection = database.collection("donationRequests");
 const usersCollection = database.collection("user");
+const fundingCollection = database.collection("fundings");
 
 
 
@@ -131,12 +132,42 @@ app.get("/users", async (req, res) => {
   const users = await usersCollection.find().toArray();
   res.send(users);
 });
+
+
+app.get("/users/:email", async (req, res) => {
+  const email = req.params.email;
+
+  const user =
+    await usersCollection.findOne({
+      email,
+    });
+
+  res.send(user);
+});
+
+app.get("/fundings", async (req, res) => {
+  const result =
+    await fundingCollection
+      .find({})
+      .sort({ fundingDate: -1 })
+      .toArray();
+
+  res.send(result);
+});
 app.post("/donation-requests", async (req, res) => {
   console.log("BODY:", req.body);
 
   const result = await donationRequestCollection.insertOne(req.body);
 
   console.log("RESULT:", result);
+
+  res.send(result);
+});
+
+
+app.post("/fundings", async (req, res) => {
+  const result =
+    await fundingCollection.insertOne(req.body);
 
   res.send(result);
 });
