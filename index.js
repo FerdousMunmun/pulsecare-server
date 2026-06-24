@@ -6,9 +6,9 @@ const dontenv = require("dotenv");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dontenv.config();
-console.log("CLIENT_URL =", process.env.CLIENT_URL);
+
 const uri = process.env.MONGO_DB_URI;
-console.log(process.env.MONGO_DB_URI);
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -265,7 +265,23 @@ app.patch(
     res.send(result);
   }
 );
+app.patch("/users/:id", async (req, res) => {
+  const id = req.params.id;
 
+  const updatedData = req.body;
+
+  const result =
+    await usersCollection.updateOne(
+      {
+        _id: new ObjectId(id),
+      },
+      {
+        $set: updatedData,
+      }
+    );
+
+  res.send(result);
+});
 
  
 
