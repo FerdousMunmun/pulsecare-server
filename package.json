@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "dev": "nodemon index.js"
-},
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FerdousMunmun/pulsecare-server.git"
@@ -20,9 +20,12 @@
   },
   "homepage": "https://github.com/FerdousMunmun/pulsecare-server#readme",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongodb": "^7.3.0"
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.3.0",
+    "stripe": "^22.2.3"
   }
 }
