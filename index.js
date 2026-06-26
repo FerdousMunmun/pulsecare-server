@@ -86,6 +86,7 @@ const verifyToken = (req, res, next) => {
 
 async function run() {
   try {
+       console.log("Before Mongo Connect");
     await client.connect();
 
 
@@ -553,7 +554,9 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     // await client.close();
   }
 }
-run().catch(console.dir);
+run().catch((err) => {
+  console.error("RUN ERROR:", err);
+});
 
 app.get("/", (req, res) => {
   res.send("Server is running fine!");
