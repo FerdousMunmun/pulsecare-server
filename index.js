@@ -2,21 +2,20 @@ const dns = require('node:dns');
 dns.setServers(['1.1.1.1', '1.0.0.1']);
 const Stripe = require("stripe");
 const express = require("express");
-
-
 const dontenv = require("dotenv");
+dontenv.config();
+const { toNodeHandler } = require("better-auth/node");
+const { auth } = require("./lib/auth");
+
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
 
 
-dontenv.config();
 
 
-console.log(
-  "Stripe Secret:",
-  process.env.STRIPE_SECRET_KEY
-);
+
+
 
 const stripe = Stripe(
   process.env.STRIPE_SECRET_KEY
@@ -30,9 +29,7 @@ const uri = process.env.MONGO_DB_URI;
 const app = express();
 
 
-app.get("/test", (req, res) => {
-  res.send("Test route working");
-});
+
 const PORT = process.env.PORT || 5000;
 
 app.use(
@@ -44,6 +41,7 @@ app.use(
 app.use(express.json());
 
 app.use(cookieParser());
+app.use("/api/auth", toNodeHandler(auth));
 
 const client = new MongoClient(uri, {
   serverApi: {
