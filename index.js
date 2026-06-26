@@ -2,6 +2,8 @@ const dns = require('node:dns');
 dns.setServers(['1.1.1.1', '1.0.0.1']);
 const Stripe = require("stripe");
 const express = require("express");
+
+
 const dontenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
@@ -26,6 +28,11 @@ dontenv.config();
 const uri = process.env.MONGO_DB_URI;
 
 const app = express();
+
+
+app.get("/test", (req, res) => {
+  res.send("Test route working");
+});
 const PORT = process.env.PORT || 5000;
 
 app.use(
@@ -256,7 +263,11 @@ app.post("/jwt", async (req, res) => {
   secure: true,
   sameSite: "none",
   maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+})
+ .send({
+      success: true,
+    });
+
 
 });
 
