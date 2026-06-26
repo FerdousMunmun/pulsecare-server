@@ -561,6 +561,9 @@ app.get("/", (req, res) => {
 
 
 
+app.get("/check", (req, res) => {
+  res.send("After run()");
+});
 
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
