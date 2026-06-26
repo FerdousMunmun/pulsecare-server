@@ -89,9 +89,9 @@ async function run() {
     await client.connect();
 
 
-
+    console.log("MongoDB Connected");
     const database = client.db("pulsecare_db");
-    console.log("DB Name:", database.databaseName);
+    
 
 
     const districtsCollection = database.collection("districts");
