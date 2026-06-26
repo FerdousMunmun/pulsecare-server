@@ -205,7 +205,7 @@ async function run() {
 
 });
 
-
+console.log("Registering districts route...");
 
     app.get("/districts",   async (req, res) => {
       const result = await districtsCollection
