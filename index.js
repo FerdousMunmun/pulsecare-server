@@ -1,48 +1,32 @@
 const dns = require('node:dns');
 dns.setServers(['1.1.1.1', '1.0.0.1']);
-const Stripe = require("stripe");
+
+// start point
 const express = require("express");
 const dontenv = require("dotenv");
-dontenv.config();
-const { toNodeHandler } = require("better-auth/node");
-const { auth } = require("./lib/auth");
-
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
-
-
-
-
-
-
-
-
-const stripe = Stripe(
-  process.env.STRIPE_SECRET_KEY
-);
 const cors = require("cors");
+const Stripe = require("stripe");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
+
 dontenv.config();
-
-const uri = process.env.MONGO_DB_URI;
-
 const app = express();
+const PORT = process.env.PORT;
 
-
-
-const PORT = process.env.PORT || 5000;
-
-app.use(
-  cors({
-    credentials: true,
-    origin: [process.env.CLIENT_URL],
-  }),
-);
+const cookieParser = require("cookie-parser");
+app.use(cors())
 app.use(express.json());
 
-app.use(cookieParser());
-app.use("/api/auth", toNodeHandler(auth));
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`)
+})
+const PORT = process.env.PORT || 5000;
+app.get("/", (req, res) => {
+  res.send("Server is running fine!");
+});
 
+// mongodb start
+const uri = process.env.MONGO_DB_URI;
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -52,44 +36,71 @@ const client = new MongoClient(uri, {
 });
 
 
-const verifyToken = (req, res, next) => {
+// jwt create
 
-  const token = req.cookies.token;
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+);
+const stripe = Stripe(
+  process.env.STRIPE_SECRET_KEY
+);
 
-  if (!token) {
+
+
+
+// app.use(
+//   cors({
+//     credentials: true,
+//     origin:
+   
+//     [ "http://localhost:3000",
+//       process.env.CLIENT_URL],
+//   }),
+// );
+
+
+
+
+
+
+
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).send({
-      message: "Unauthorized",
+      message: "No token found",
     });
   }
 
-  jwt.verify(
-    token,
-    process.env.JWT_SECRET,
-    (err, decoded) => {
+  const token = authHeader.split(" ")[1];
+if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
 
-      if (err) {
-        return res.status(401).send({
-          message: "Unauthorized",
-        });
-      }
+    
 
-      req.user = decoded;
+    next();
+  } catch (error) {
+    console.log(error);
 
-      next();
-
-    }
-  );
-
+    return res.status(403).json({
+      message: "Forbidden",error,
+    });
+  }
 };
 
 async function run() {
   try {
-       console.log("Before Mongo Connect");
-    await client.connect();
+       
+    // await client.connect();
 
-
+// mongodbcollection
     console.log("MongoDB Connected");
-    const database = client.db("pulsecare_db");
+    const db = client.db("pulsecare_db");
     
 
 
@@ -245,30 +256,7 @@ console.log("Registering districts route...");
       }
     );
 
-app.post("/jwt", async (req, res) => {
 
-  const user = req.body;
-
-  const token = jwt.sign(
-    user,
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "7d",
-    }
-  );
-
-  res.cookie("token", token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "none",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-})
- .send({
-      success: true,
-    });
-
-
-});
 
     app.get("/users",  async (req, res) => {
       const users = await usersCollection.find().toArray();
@@ -460,7 +448,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
 
 
     app.patch(
-      "/donation-requests/:id/status",  verifyToken,
+      "/donation-requests/:id/status",  
       async (req, res) => {
 
         const id = req.params.id;
@@ -485,7 +473,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
       }
     );
     app.patch(
-      "/users/:id/status",  verifyToken,
+      "/users/:id/status",  
       async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
@@ -505,7 +493,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     );
 
     app.patch(
-      "/users/:id/role",  verifyToken,
+      "/users/:id/role",  
       async (req, res) => {
         const { id } = req.params;
         const { role } = req.body;
@@ -523,7 +511,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
         res.send(result);
       }
     );
-    app.patch("/users/:id",  verifyToken, async (req, res) => {
+    app.patch("/users/:id",   async (req, res) => {
       const id = req.params.id;
 
       const updatedData = req.body;
@@ -543,7 +531,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
 
 
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
@@ -553,23 +541,14 @@ app.get("/statistics",  verifyToken, async (req, res) => {
   }
 }
 run().catch((err) => {
-  console.error("RUN ERROR:", err);
-});
-
-app.get("/", (req, res) => {
-  res.send("Server is running fine!");
+ 
 });
 
 
 
-app.get("/check", (req, res) => {
-  res.send("After run()");
-});
 
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`Server running on ${PORT}`);
-  });
-}
 
-module.exports = app;
+
+
+
+
