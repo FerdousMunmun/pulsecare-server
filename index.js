@@ -82,7 +82,7 @@ const donorVerify = async (req, res, next) => {
 async function run() {
   try {
 
-    await client.connect();
+    // await client.connect();
 
     // mongodbcollection
     console.log("MongoDB Connected");
