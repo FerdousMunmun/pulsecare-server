@@ -1,26 +1,28 @@
 const dns = require('node:dns');
-dns.setServers(['1.1.1.1', '1.0.0.1']);
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 // start point
 const express = require("express");
 const dontenv = require("dotenv");
 const cors = require("cors");
-const Stripe = require("stripe");
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dontenv.config();
 const app = express();
 const PORT = process.env.PORT;
-
-const cookieParser = require("cookie-parser");
-app.use(cors())
 app.use(express.json());
+
+app.use(cors())
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
 })
-const PORT = process.env.PORT || 5000;
 app.get("/", (req, res) => {
   res.send("Server is running fine!");
 });
@@ -41,133 +43,66 @@ const client = new MongoClient(uri, {
 const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
 );
-const stripe = Stripe(
-  process.env.STRIPE_SECRET_KEY
-);
-
-
-
-
-// app.use(
-//   cors({
-//     credentials: true,
-//     origin:
-   
-//     [ "http://localhost:3000",
-//       process.env.CLIENT_URL],
-//   }),
-// );
-
-
-
-
-
-
 
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).send({
-      message: "No token found",
+    return res.status(401).json({
+      message: "Unauthorized",
     });
   }
 
   const token = authHeader.split(" ")[1];
-if (!token) {
+  if (!token) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   try {
     const { payload } = await jwtVerify(token, JWKS);
-
-    
+    req.user = payload;
 
     next();
   } catch (error) {
     console.log(error);
 
     return res.status(403).json({
-      message: "Forbidden",error,
+      msg: "Unauthorized"
     });
   }
+};
+const donorVerify = async (req, res, next) => {
+  const user = req.user;
+  if (user.role !== "donor") {
+    return res.status(403).json({ msg: "Forbidden" });
+  }
+  next();
 };
 
 async function run() {
   try {
-       
-    // await client.connect();
 
-// mongodbcollection
+    await client.connect();
+
+    // mongodbcollection
     console.log("MongoDB Connected");
     const db = client.db("pulsecare_db");
-    
 
 
-    const districtsCollection = database.collection("districts");
-    const upazilasCollection = database.collection("upazilas");
-    const donationRequestCollection = database.collection("donationRequests");
-    const usersCollection = database.collection("user");
-    const fundingCollection = database.collection("fundings");
 
-    app.post(
-  "/create-checkout-session",
-  async (req, res) => {
-
-    const { amount,email } = req.body;
-
-    if (!amount || Number(amount) <= 0) {
-      return res.status(400).send({
-        success: false,
-        message: "Invalid amount",
-      });
-    }
-    const session =
-      await stripe.checkout.sessions.create({
-
-        customer_email: email,
-        payment_method_types: [
-          "card",
-        ],
-
-        mode: "payment",
-
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-
-              product_data: {
-                name:
-                  "PulseCare Donation",
-              },
-
-              unit_amount:
-                amount * 100,
-            },
-
-            quantity: 1,
-          },
-        ],
-
-        success_url:
-          `${process.env.CLIENT_URL}/funding/success`,
-
-        cancel_url:
-         `${process.env.CLIENT_URL}/funding/cancel`,
-      });
-
-    res.send({
-      url: session.url,
-    });
-  }
-);
+    const districtsCollection = db.collection("districts");
+    const upazilasCollection = db.collection("upazilas");
+    const donationRequestCollection = db.collection("donationRequests");
+    const usersCollection = db.collection("user");
+    const fundingCollection = db.collection("fundings");
+    const subscriptionsCollection = db.collection("subscription");
 
 
 
 
 
-    app.get("/donation-requests",  async (req, res) => {
+
+    app.get("/donation-requests", async (req, res) => {
       const result = await donationRequestCollection
         .find({})
         .toArray();
@@ -176,7 +111,7 @@ async function run() {
     });
 
 
-    app.get("/donation-requests/:id",verifyToken,   async (req, res) => {
+    app.get("/donation-requests/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
 
       const result =
@@ -187,37 +122,37 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/dashboard-stats",   async (req, res) => {
+    app.get("/dashboard-stats", async (req, res) => {
 
-  const totalDonors =
-    await usersCollection.countDocuments({
-      role: "donor",
+      const totalDonors =
+        await usersCollection.countDocuments({
+          role: "donor",
+        });
+
+      const totalRequests =
+        await donationRequestCollection.countDocuments();
+
+      const fundings =
+        await fundingCollection.find().toArray();
+
+      const totalFunding =
+        fundings.reduce(
+          (sum, item) =>
+            sum + Number(item.amount),
+          0
+        );
+
+      res.send({
+        totalDonors,
+        totalRequests,
+        totalFunding,
+      });
+
     });
 
-  const totalRequests =
-    await donationRequestCollection.countDocuments();
 
-  const fundings =
-    await fundingCollection.find().toArray();
 
-  const totalFunding =
-    fundings.reduce(
-      (sum, item) =>
-        sum + Number(item.amount),
-      0
-    );
-
-  res.send({
-    totalDonors,
-    totalRequests,
-    totalFunding,
-  });
-
-});
-
-console.log("Registering districts route...");
-
-    app.get("/districts",   async (req, res) => {
+    app.get("/districts", async (req, res) => {
       const result = await districtsCollection
         .find({})
         .toArray();
@@ -238,7 +173,7 @@ console.log("Registering districts route...");
     });
 
     app.get(
-      "/my-donation-requests/:email",  verifyToken,
+      "/my-donation-requests/:email",verifyToken,
       async (req, res) => {
 
         const email = req.params.email;
@@ -258,13 +193,13 @@ console.log("Registering districts route...");
 
 
 
-    app.get("/users",  async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
     });
 
 
-    app.get("/users/:email",  async (req, res) => {
+    app.get("/users/:email", async (req, res) => {
       const email = req.params.email;
 
       const user =
@@ -275,9 +210,9 @@ console.log("Registering districts route...");
       res.send(user);
     });
 
-    app.get("/fundings",   async (req, res) => {
+    app.get("/fundings",  verifyToken, async (req, res) => {
       const result =
-        await fundingCollection
+        await subscriptionsCollection
           .find({})
           .sort({ fundingDate: -1 })
           .toArray();
@@ -285,78 +220,78 @@ console.log("Registering districts route...");
       res.send(result);
     });
 
-    app.get("/search-donors",   async (req, res) => {
+    app.get("/search-donors", async (req, res) => {
 
-  try {
+      try {
 
-    const {
-      bloodGroup,
-      district,
-      upazila,
-    } = req.query;
+        const {
+          bloodGroup,
+          district,
+          upazila,
+        } = req.query;
 
-    const query = {
-      role: "donor",
-      status: "active",
-    };
+        const query = {
+          role: "donor",
+          status: "active",
+        };
 
-    if (bloodGroup) {
-      query.bloodGroup = bloodGroup;
-    }
+        if (bloodGroup) {
+          query.bloodGroup = bloodGroup;
+        }
 
-    if (district) {
-      query.district = district;
-    }
+        if (district) {
+          query.district = district;
+        }
 
-    if (upazila) {
-      query.upazila = upazila;
-    }
+        if (upazila) {
+          query.upazila = upazila;
+        }
 
-    const donors =
-      await usersCollection
-        .find(query)
-        .toArray();
+        const donors =
+          await usersCollection
+            .find(query)
+            .toArray();
 
-    res.send(donors);
+        res.send(donors);
 
-  } catch (error) {
+      } catch (error) {
 
-    res.status(500).send({
-      message: error.message,
+        res.status(500).send({
+          message: error.message,
+        });
+
+      }
+
     });
 
-  }
+    app.get("/statistics", async (req, res) => {
+      try {
+        const activeDonors = await usersCollection.countDocuments({
+          role: "donor",
+          status: "active",
+        });
 
-});
+        const bloodRequests =
+          await donationRequestCollection.countDocuments();
 
-app.get("/statistics",  verifyToken, async (req, res) => {
-  try {
-    const activeDonors = await usersCollection.countDocuments({
-      role: "donor",
-      status: "active",
+        const bloodDonations =
+          await donationRequestCollection.countDocuments({
+            status: "done",
+          });
+
+        res.send({
+          activeDonors,
+          bloodRequests,
+          bloodDonations,
+        });
+      } catch (error) {
+        res.status(500).send({
+          message: error.message,
+        });
+      }
     });
 
-    const bloodRequests =
-      await donationRequestCollection.countDocuments();
-
-    const bloodDonations =
-      await donationRequestCollection.countDocuments({
-        status: "done",
-      });
-
-    res.send({
-      activeDonors,
-      bloodRequests,
-      bloodDonations,
-    });
-  } catch (error) {
-    res.status(500).send({
-      message: error.message,
-    });
-  }
-});
-
-    app.post("/donation-requests",  verifyToken, async (req, res) => {
+    app.post("/donation-requests", verifyToken, async (req, res) => {
       console.log("BODY:", req.body);
 
       const result = await donationRequestCollection.insertOne(req.body);
@@ -367,26 +302,26 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     });
 
 
-   app.post("/fundings",  verifyToken, async (req, res) => {
+    app.post("/fundings",verifyToken, async (req, res) => {
 
-  const fundingData = req.body;
+      const fundingData = req.body;
 
-  if (
-    !fundingData.amount ||
-    Number(fundingData.amount) <= 0
-  ) {
-    return res.status(400).send({
-      success: false,
-      message: "Amount must be greater than 0",
+      if (
+        !fundingData.amount ||
+        Number(fundingData.amount) <= 0
+      ) {
+        return res.status(400).send({
+          success: false,
+          message: "Amount must be greater than 0",
+        });
+      }
+
+      const result =
+        await fundingCollection.insertOne(fundingData);
+
+      res.send(result);
     });
-  }
-
-  const result =
-    await fundingCollection.insertOne(fundingData);
-
-  res.send(result);
-});
-    app.delete("/donation-requests/:id",  verifyToken, async (req, res) => {
+    app.delete("/donation-requests/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
 
       const result = await donationRequestCollection.deleteOne({
@@ -397,7 +332,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     });
 
 
-    app.patch("/donation-requests/:id",  verifyToken, async (req, res) => {
+    app.patch("/donation-requests/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
 
       const result = await donationRequestCollection.updateOne(
@@ -415,7 +350,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
 
 
     app.patch(
-      "/donation-requests/:id/donate",  verifyToken,
+      "/donation-requests/:id/donate",verifyToken,
       async (req, res) => {
 
         const id = req.params.id;
@@ -448,7 +383,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
 
 
     app.patch(
-      "/donation-requests/:id/status",  
+      "/donation-requests/:id/status",  verifyToken,
       async (req, res) => {
 
         const id = req.params.id;
@@ -473,7 +408,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
       }
     );
     app.patch(
-      "/users/:id/status",  
+      "/users/:id/status",verifyToken,
       async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
@@ -493,7 +428,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     );
 
     app.patch(
-      "/users/:id/role",  
+      "/users/:id/role",verifyToken,
       async (req, res) => {
         const { id } = req.params;
         const { role } = req.body;
@@ -511,7 +446,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
         res.send(result);
       }
     );
-    app.patch("/users/:id",   async (req, res) => {
+    app.patch("/users/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
 
       const updatedData = req.body;
@@ -528,8 +463,39 @@ app.get("/statistics",  verifyToken, async (req, res) => {
 
       res.send(result);
     });
+    // tearcermaking 
+    app.post("/subscription", async (req, res) => {
+      const {
+        sessionId,
+        userId,
+        userName,
+        userEmail,
+        amount,
+      } = req.body;
 
+      const isExit = await subscriptionsCollection.findOne({
+        sessionId,
+      });
 
+      if (isExit) {
+        return res.json({
+          msg: "Already exit!",
+        });
+      }
+
+      await subscriptionsCollection.insertOne({
+        sessionId,
+        userId,
+        userName,
+        userEmail,
+        amount,
+        fundingDate: new Date(),
+      });
+
+      res.json({
+        msg: "Payment successful",
+      });
+    });
 
     // await client.db("admin").command({ ping: 1 });
     console.log(
@@ -540,9 +506,7 @@ app.get("/statistics",  verifyToken, async (req, res) => {
     // await client.close();
   }
 }
-run().catch((err) => {
- 
-});
+run().catch(console.error);
 
 
 
