@@ -111,14 +111,15 @@ async function run() {
     });
 
 
-    app.get("/donation-requests/:id",verifyToken, async (req, res) => {
+    app.get("/donation-requests/:id", async (req, res) => {
+       console.log("DETAIL ROUTE HIT");
       const id = req.params.id;
 
       const result =
         await donationRequestCollection.findOne({
           _id: new ObjectId(id),
         });
-
+  console.log(result);
       res.send(result);
     });
 
